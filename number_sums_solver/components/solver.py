@@ -1,10 +1,7 @@
 import itertools
 from typing import Sequence
 
-
-def _flatten_and_unique(sequences:Sequence[Sequence[int]]): # only 'utils-esque' function so just keeping here
-    ''' get unique values from a sequence of sequences '''
-    return sorted(set(i for sequence in sequences for i in sequence))
+from number_sums_solver.components.utils import _flatten_and_unique
 
 class Solver:
     def __init__(self, integers:list[int]):
