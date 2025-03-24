@@ -1,12 +1,11 @@
 import pandas as pd
+import numpy as np
 from itertools import product
 
 from number_sums_solver.components.square import Square
 from number_sums_solver.components.group import Group
+from number_sums_solver.components.utils import _is_square_df
 
-def _is_square_df(df:pd.DataFrame):
-    if df.shape[0] != df.shape[1]:
-        raise ValueError(f'DataFrame shape must be square. got {df.shape}')
 
 def _get_square_coords(df:pd.DataFrame) -> list[tuple[int]]:
     return [t for t in list(product(range(len(df)), repeat=2)) if 0 not in t]
@@ -37,6 +36,28 @@ class Matrix:
                 return self.groups_dict[input_]
         elif isinstance(self, tuple):
             return self._get_square(input_[0], input_[1])
+        
+    @classmethod
+    def from_csv(cls, num_df_path:str, col_df_path:str|None=None):
+        col_df = pd.read_csv(col_df_path) if isinstance(col_df_path, str) else None
+        return cls(
+            pd.read_csv(num_df_path),
+            col_df
+        )
+    
+    @classmethod
+    def from_excel(cls, path:str, num_df_sheet:str|None=None, col_df_sheet:str|None=None, **kwargs):
+        if not col_df_sheet:
+            num_df = pd.read_excel(path)
+            col_df = None
+        else:
+            d = pd.read_excel(path, sheet_name=None)
+            num_df = d[num_df_sheet]
+            col_df = d[col_df_sheet]
+        return cls(
+            num_df,
+            col_df
+        )
     
     @property
     def colors(self) -> list[str]:
@@ -91,6 +112,8 @@ class Matrix:
             groups_dict[f'R{row_i}'] = Group(self._get_square_list(row_i, 0), self._get_target_value(row_i,0))
 
         # colors
+        if self.colors:
+            ...
         # create a _get_square_colors #TODO
 
         return groups_dict
