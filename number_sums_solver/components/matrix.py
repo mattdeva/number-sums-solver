@@ -5,23 +5,41 @@ from itertools import product
 from number_sums_solver.components.square import Square
 from number_sums_solver.components.group import Group
 from number_sums_solver.components.utils import _is_square_df
+from number_sums_solver.components.colors import Colors
 
+
+def _df_shapes_same(df1:pd.DataFrame, df2:pd.DataFrame):
+    if not df1.shape == df2.shape:
+        raise ValueError(f'Dataframe shapes do not match')
 
 def _get_square_coords(df:pd.DataFrame) -> list[tuple[int]]:
     return [t for t in list(product(range(len(df)), repeat=2)) if 0 not in t]
 
+def _pull_cell_value(input_:int|str):
+    if isinstance(input_, int):
+        return input_
+    else:
+        return int(input_.split('(')[0].strip())
+    
+def _pull_cell_values_from_df(input_df:pd.DataFrame): # great name
+    df = input_df.copy()
+    for col in df:
+        df[col] = [_pull_cell_value(i) for i in df[col]]
+    return df
+
 class Matrix:
-    def __init__(self, num_df:pd.DataFrame, col_df:pd.DataFrame|None=None):
+    def __init__(self, num_df:pd.DataFrame, colors:Colors|None=None):
         
         ## checks to see if df is square
         _is_square_df(num_df)
-        if col_df:
-            _is_square_df(col_df)
         
         ## init
+        # NOTE: i couldve done a 3D array instead of multiple dfs.. but i opted for this.. 
+            # i think makes a little easier/straightforward in the case of no colors. but up for debate
         self.num_df = num_df
-        self.col_df = col_df
-        self.squares = self._make_squares(self.num_df, self.col_df)
+        self.colors = self._check_colors(self.num_df, colors)
+
+        self.squares = self._make_squares(self.num_df, self.colors)
         self.groups_dict = self._get_groups_dict()
     
     def __len__(self):
@@ -36,32 +54,20 @@ class Matrix:
                 return self.groups_dict[input_]
         elif isinstance(self, tuple):
             return self._get_square(input_[0], input_[1])
-        
+          
     @classmethod
-    def from_csv(cls, num_df_path:str, col_df_path:str|None=None):
-        col_df = pd.read_csv(col_df_path) if isinstance(col_df_path, str) else None
+    def from_excel(cls, path:str):
         return cls(
-            pd.read_csv(num_df_path),
-            col_df
-        )
-    
-    @classmethod
-    def from_excel(cls, path:str, num_df_sheet:str|None=None, col_df_sheet:str|None=None, **kwargs):
-        if not col_df_sheet:
-            num_df = pd.read_excel(path)
-            col_df = None
-        else:
-            d = pd.read_excel(path, sheet_name=None)
-            num_df = d[num_df_sheet]
-            col_df = d[col_df_sheet]
-        return cls(
-            num_df,
-            col_df
+            _pull_cell_values_from_df(pd.read_excel(path, header=None)),
+            Colors.from_excel(path)
         )
     
     @property
-    def colors(self) -> list[str]:
-        return list(set([s.color for s in self.squares if s.color is not None]))
+    def color_values(self) -> list[str]:
+        if self.colors is None:
+            return []
+        else:
+            return self.colors.values
     
     @property
     def active_squares(self) -> list[Square]:
@@ -88,16 +94,25 @@ class Matrix:
         return all([True if g.solved else False for g in self.groups])
 
     @staticmethod
-    def _make_squares(num_df:pd.DataFrame, col_df:pd.DataFrame|None=None) -> list[Square]:
+    def _check_colors(num_df:pd.DataFrame, colors:Colors):
+        if colors is None: # im sure this is not best practice
+            return None 
+        
+        _df_shapes_same(num_df, colors.col_df)
+
+        return colors
+
+    @staticmethod
+    def _make_squares(num_df:pd.DataFrame, colors:Colors|None=None) -> list[Square]:
         coords = _get_square_coords(num_df)
         squares = []
         for coord in coords:
             r,c = coord[0], coord[1]
             value = num_df.iloc[r, c]
             square = Square(r, c, value)
-            if col_df:
-                square.color = col_df.iloc[r,c]
-            squares.append(Square(r, c, value))
+            if colors is not None:
+                square.color = colors.col_df.iloc[r,c]
+            squares.append(square)
         return squares
     
     def _get_groups_dict(self) -> dict[str, Group]:
@@ -105,15 +120,25 @@ class Matrix:
 
         # cols
         for col_i in range(1, len(self)+1):
-            groups_dict[f'C{col_i}'] = Group(self._get_square_list(col_i, 1), self._get_target_value(col_i, 1))
+            groups_dict[f'C{col_i}'] = Group(
+                self._get_square_list(col_i, 1), 
+                self._get_target_value(col_i, 1)
+            )
 
         # rows
         for row_i in range(1, len(self)+1):
-            groups_dict[f'R{row_i}'] = Group(self._get_square_list(row_i, 0), self._get_target_value(row_i,0))
+            groups_dict[f'R{row_i}'] = Group(
+                self._get_square_list(row_i, 0), 
+                self._get_target_value(row_i,0)
+            )
 
         # colors
-        if self.colors:
-            ...
+        if self.colors is not None:
+            for color_str in self.color_values: # NOTE: couldve just done colors.values directly.. probably better practice that way
+                groups_dict[color_str] = Group(
+                    self._get_square_color(color_str),
+                    self.colors.target_dict[color_str]
+                )
         # create a _get_square_colors #TODO
 
         return groups_dict
@@ -132,6 +157,9 @@ class Matrix:
             return [self._get_square(r,c) for r,c in zip([i]*len(self), range(1,len(self)+1))]
         if axis==1:
             return [self._get_square(r,c) for r,c in zip(range(1,len(self)+1),[i]*len(self))]
+        
+    def _get_square_color(self, color_str:str) -> list[Square]:
+        return [s for s in self.squares if s.color==color_str]
 
     def _get_target_value(self, i:int, axis:int) -> int:
         if i not in range(1,len(self)+1): # Make Error

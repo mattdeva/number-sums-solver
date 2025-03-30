@@ -8,7 +8,12 @@ authors = [
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "pandas (>=2.2.3,<3.0.0)"
+    "pandas (>=2.2.3,<3.0.0)",
+    "plotly (>=6.0.1,<7.0.0)",
+    "nbformat (>=5.10.4,<6.0.0)",
+    "openpyxl (>=3.1.5,<4.0.0)",
+    "webcolors (>=24.11.1,<25.0.0)",
+    "pytest (>=8.3.5,<9.0.0)",
 ]
 
 
