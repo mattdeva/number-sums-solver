@@ -1,8 +1,9 @@
 import pandas as pd
 from typing import Sequence
 
-def _flatten_and_unique(sequences:Sequence[Sequence[int]]): # only 'utils-esque' function so just keeping here
+def _flatten_and_unique(sequences:Sequence[Sequence[int]]):
     ''' get unique values from a sequence of sequences '''
+    # NOTE: will not work on alrady flat lists (should consider making a function to detect this?)
     return sorted(set(i for sequence in sequences for i in sequence))
 
 def _is_square_df(df:pd.DataFrame):
