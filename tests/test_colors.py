@@ -17,7 +17,7 @@ def test_df_unique_values(col_df):
 
 
 def test_colors(col_df): # simple test fine
-    colors = Colors.from_excel('data/dummy_puzzles.xlsx')
+    colors = Colors.from_excel('data/dummy_puzzles.xlsx', sheet_name='colors_ex1')
     pd.testing.assert_frame_equal(col_df, colors.col_df)
     assert {'FFE06666':6, 'FF6FA8DC':6} == colors.target_dict
     assert sorted(['FFE06666','FF6FA8DC']) == sorted(colors.values)

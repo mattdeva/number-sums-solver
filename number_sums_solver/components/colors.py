@@ -8,12 +8,16 @@ from number_sums_solver.components.utils import _is_square_df
 def _df_unique_values(df:pd.DataFrame) -> list:
     return [v for v in np.unique(df.values) if v != df.iloc[0,0]]
 
-def _get_colors_components(excel_path:str) -> tuple[pd.DataFrame, dict]:
+def _get_colors_components(excel_path:str, sheet_name:str|None=None) -> tuple[pd.DataFrame, dict]:
     # assumes one sheet in excel for now (planning to change later)
     # i dont think theres a point to break up function even tho it does a couple things
 
     wb = load_workbook(excel_path)
-    sheet = wb.active
+
+    if sheet_name:
+        sheet = wb[sheet_name]
+    else:
+        sheet = wb.active
 
     rows = []
     dict_ = {}
@@ -51,8 +55,8 @@ class Colors:
             raise ValueError(f'DataFrame and Target_Dict must have same values. got {df_values} and {dict_keys}')
         
     @classmethod
-    def from_excel(cls, path:str):
-        col_df, target_dict = _get_colors_components(path)
+    def from_excel(cls, path:str, sheet_name:str|None=None):
+        col_df, target_dict = _get_colors_components(path, sheet_name)
         return cls(col_df, target_dict) 
 
     @property

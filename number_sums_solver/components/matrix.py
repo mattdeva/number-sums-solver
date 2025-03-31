@@ -56,9 +56,9 @@ class Matrix:
             return self._get_square(input_[0], input_[1])
           
     @classmethod
-    def from_excel(cls, path:str):
+    def from_excel(cls, path:str, sheet_name:str|None=None):
         return cls(
-            _pull_cell_values_from_df(pd.read_excel(path, header=None)),
+            _pull_cell_values_from_df(pd.read_excel(path, header=None, sheet_name=sheet_name)),
             Colors.from_excel(path)
         )
     
