@@ -27,6 +27,14 @@ def _pull_cell_values_from_df(input_df:pd.DataFrame): # great name
         df[col] = [_pull_cell_value(i) for i in df[col]]
     return df
 
+def _get_int(input_:object):
+    ''' want to return native int, not numpy int.. theres probably a better way to do this '''
+    if isinstance(input_, int):
+        return input_
+    elif hasattr(input_, 'item'):
+        return input_.item()
+    else:
+        raise ValueError(f'Input must be int-like. got {type(input_)}')
 class Matrix:
     def __init__(self, num_df:pd.DataFrame, colors:Colors|None=None):
         
@@ -169,9 +177,9 @@ class Matrix:
             raise ValueError(f'axis must be in [0,1]. got {axis}')
         
         if axis==0:
-            return self.num_df.iloc[i][0].item()
+            return _get_int(self.num_df.iloc[i][0])
         else:
-            return self.num_df.iloc[:,i][0].item()
+            return _get_int(self.num_df.iloc[:,i][0])
         
     def get_group_series(self, s:str) -> Group:
         return self.groups_dict[s]
