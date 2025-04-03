@@ -13,15 +13,18 @@ def _df_shapes_same(df1:pd.DataFrame, df2:pd.DataFrame):
         raise ValueError(f'Dataframe shapes do not match')
 
 def _get_square_coords(df:pd.DataFrame) -> list[tuple[int]]:
+    ''' should return all row,column tuple pairs for each cell in a dataframe. excludes any coord with 0. '''
     return [t for t in list(product(range(len(df)), repeat=2)) if 0 not in t]
 
 def _pull_cell_value(input_:int|str):
+    ''' expected values like 1, 3(9), 7 (24). return int if int. return value preceding parenthesis if string '''
     if isinstance(input_, int):
         return input_
     else:
         return int(input_.split('(')[0].strip())
     
 def _pull_cell_values_from_df(input_df:pd.DataFrame): # great name
+    ''' for input dataframe that has values like 3, 6(10), 7 (15), func should return dataframe with only ints'''
     df = input_df.copy()
     for col in df:
         df[col] = [_pull_cell_value(i) for i in df[col]]
@@ -35,6 +38,7 @@ def _get_int(input_:object):
         return input_.item()
     else:
         raise ValueError(f'Input must be int-like. got {type(input_)}')
+    
 class Matrix:
     def __init__(self, num_df:pd.DataFrame, colors:Colors|None=None):
         
