@@ -9,13 +9,13 @@ def _check_unique_coordinates(squares) -> None:
         raise ValueError(f'non unique coordinates in Squares')
 
 class Group:
-    # cant just do rows & columns bc eventually want to add color
+
     def __init__(self, squares:list[Square], nominal_target:int, name:str|None=None):
         self.squares = squares
         _check_unique_coordinates(self.squares) # not sure if putting here is best practice...
 
         self.nominal_target = nominal_target
-        self.name = f'{self.nominal_target}' if name is None else name # might be helpful later to debug, but not required
+        self.name = f'{self.nominal_target}' if name is None else name # name might be helpful later to debug, but not required
 
     def __str__(self):
         return self.name
@@ -64,16 +64,13 @@ class Group:
         square_int_dict = self._get_square_int_dict()
         list_ = Solver(square_int_dict.values()).squeeze(self.running_target)
         if len(list_) == 1:
-            # int_list = self._get_key(d)
             for square, int_ in square_int_dict.items():
                 if int_ in list_[0]:
                     square.select()
-                    # print('select ', square)
                     print(f'select {square}') if verbose else None
                 else:
                     square.deactivate()
                     print(f'deactivate {square}') if verbose else None
-            # self.solve()
         
         elif len(list_) > 1:
             int_list = _flatten_and_unique(list_) # {(1, 3): 4, (2, 2): 4} -> [1,2,3]
@@ -81,3 +78,8 @@ class Group:
                 if int_ not in int_list:
                     square.deactivate()
                     print(f'deactivate {square}') if verbose else None
+
+        else: # deactivate all non-selected squares
+            for square, int_ in square_int_dict.items():
+                if square not in self.selected_squares:
+                    square.deactivate()
