@@ -71,7 +71,7 @@ class Matrix:
     def from_excel(cls, path:str, sheet_name:str|None=None):
         return cls(
             _pull_cell_values_from_df(pd.read_excel(path, header=None, sheet_name=sheet_name)),
-            Colors.from_excel(path)
+            Colors.from_excel(path, sheet_name=sheet_name)
         )
     
     @property
