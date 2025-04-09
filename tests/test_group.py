@@ -57,6 +57,7 @@ def test_group_solved(squares, solved):
     "squares, target, selected_tup, deactivated_tup",
     [
         ([Square(0, 0, 5), Square(1, 1, 10)], 5, (True, False), (False, True)),
+        ([Square(0, 0, 5), Square(1, 1, 5), Square(0,1,4)], 5, (False, False, False), (False, False, True)),
         ([Square(0, 0, 5), Square(1, 1, 5)], 5, (False, False), (False, False)),
         ([Square(0, 0, 5, selected=True), Square(1, 1, 10, selected=True)], 15, (True, True), (False, False)),
         ([Square(0, 0, 5), Square(1, 1, 5, selected=True), Square(0, 1, 10)], 5, (False, True, False), (True, False, True)),
