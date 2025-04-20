@@ -7,6 +7,7 @@ from number_sums_solver.images.matrix_image import (
     find_pairs,
     concat_digits,
     create_multi_digit_dict,
+    update_value_dict,
     floor_round,
     df_from_value_list,
     create_value_tuple
