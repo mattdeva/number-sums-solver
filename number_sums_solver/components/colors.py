@@ -4,6 +4,7 @@ from openpyxl import load_workbook
 
 from number_sums_solver.components.utils import _is_square_df
 
+from typing import Sequence
     
 def _df_unique_values(df:pd.DataFrame) -> list:
     return [v for v in np.unique(df.values) if v != df.iloc[0,0]]
@@ -45,6 +46,9 @@ class Colors:
         self.target_dict = target_dict
         self._check_input()
 
+    def __len__(self):
+        return len(self.target_dict)
+
     def _check_input(self):
         _is_square_df(self.col_df)
 
@@ -62,4 +66,43 @@ class Colors:
     @property
     def values(self):
         return list(self.target_dict)
+    
+    # NOTE: not a bug fan of how i did the remapping.. what i did suggests there may be better way to organize things, but is good for now...
+    def _remap_target_dict_from_sequence(self, sequence:Sequence) -> dict[str,int]:
+        out_dict = {}
+        # for i,j in zip(self.values, sequence): # not sure why this didnt work..
+        for i,j in zip(list(self.target_dict), sequence):
+            out_dict[j] = self.target_dict.pop(i)
+        return out_dict
+
+    def _remap_target_dict_from_dict(self, d:dict) -> dict[str, int]:
+        out_dict = {}
+        # for i,j in zip(self.values, d): # ^ same
+        for i,j in zip(list(self.target_dict), d):
+            out_dict[d[j]] = self.target_dict.pop(i)
+        return out_dict
+    
+    def _remap_color_df_from_sequence(self, sequence:Sequence) -> None:
+        col_values = _df_unique_values(self.col_df)
+        for old_value, new_value in zip(col_values, sequence):
+            self.col_df = self.col_df.replace(old_value, new_value)
+
+    def _remap_color_df_from_dict(self, d:dict) -> None:
+        for old_value, new_value in d.items():
+            self.col_df = self.col_df.replace(old_value, new_value)
+    
+    def change_colors(self, input_:dict|Sequence) -> None:
+        # a setter but also like not really
+        if len(input_) != len(self):
+            raise ValueError(f'length must match numbers of colors ({len(self)}. got {len(input_)})')
+        
+        if isinstance(input_, dict):
+            self.target_dict = self._remap_target_dict_from_dict(input_)
+            self._remap_color_df_from_dict(input_)
+        elif isinstance(input_, Sequence):
+            self.target_dict = self._remap_target_dict_from_sequence(input_)
+            self._remap_color_df_from_sequence(input_)
+        else:
+            raise ValueError(f'input must be Sequence or dict. got {input_}')
+        
         
