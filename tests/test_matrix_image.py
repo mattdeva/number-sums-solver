@@ -10,7 +10,8 @@ from number_sums_solver.images.matrix_image import (
     update_value_dict,
     floor_round,
     df_from_value_list,
-    create_value_tuple
+    create_value_tuple,
+    df_from_matrix_iamge
 )
 
 # specifc tests to dummy data ok for this
@@ -102,3 +103,17 @@ def test_df_from_value_list():
 
     with pytest.raises(ValueError):
         df_from_value_list([1,2,4])
+
+# NOTE: eventually update this to run when prompted
+@pytest.mark.skip(reason="takes 10 seconds...")
+def test_df_from_matrix_image(matrix_image):
+    pd.testing.assert_frame_equal(
+        df_from_matrix_iamge(matrix_image), 
+        pd.DataFrame({
+            0:[0,19,9,11,10],
+            1:[6,2,8,4,2],
+            2:[3,4,7,8,3],
+            3:[21,8,6,1,7],
+            4:[19,9,3,7,7]
+        })
+    )
