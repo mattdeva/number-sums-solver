@@ -56,17 +56,7 @@ class Matrix:
     
     def __len__(self):
         return int(len(self.squares)**(1/2))
-    
-    def __getitem__(self, input_):
-        # prob not best practice to have multiple options.. is fine :)
-        if isinstance(input_, str):
-            if input_ in self.colors:
-                ...
-            else:
-                return self.groups_dict[input_]
-        elif isinstance(self, tuple):
-            return self._get_square(input_[0], input_[1])
-          
+              
     @classmethod
     def from_excel(cls, path:str, sheet_name:str|None=None):
         return cls(
@@ -184,10 +174,31 @@ class Matrix:
             return _get_int(self.num_df.iloc[i][0])
         else:
             return _get_int(self.num_df.iloc[:,i][0])
+
         
     def get_group_series(self, s:str) -> Group:
         return self.groups_dict[s]
         
+    def get_tile(self, tup:tuple[int]) -> Group|Square:
+        ''' '''
+        # TODO: add test
+        # _transform_index(matrix, (0,1)) # -> Group C1
+        # _transform_index(matrix, (1,0)) # -> Group R1
+        # _transform_index(matrix, (1,1)) # -> Square(1, 1, 3, True, False)
+
+        if not isinstance(tup, tuple):
+            raise ValueError(f'input must be tuple. got {type(tup)}')
+        if tup == (0,0):
+            raise ValueError(f'cell (0,0) is blank')
+        if len(tup) != 2:
+            raise ValueError(f'tuple length must be 2. got {len(tup)}')
+        r, c = tup[0], tup[1]
+        if r == 0:
+            return self.groups_dict[f'C{c}']
+        if c == 0:
+            return self.groups_dict[f'R{r}']
+        return self._get_square(tup[0], tup[1])
+    
     def solve(self, max_iterations=5):
 
         for _ in range(max_iterations): # sloppy.. should do while incomplete or loop with improvement
