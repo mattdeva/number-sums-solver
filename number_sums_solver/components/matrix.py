@@ -7,6 +7,7 @@ from number_sums_solver.components.group import Group
 from number_sums_solver.components.utils import _is_square_df
 from number_sums_solver.components.colors import Colors
 
+from typing import Sequence
 
 def _df_shapes_same(df1:pd.DataFrame, df2:pd.DataFrame):
     if not df1.shape == df2.shape:
@@ -174,6 +175,32 @@ class Matrix:
             return _get_int(self.num_df.iloc[i][0])
         else:
             return _get_int(self.num_df.iloc[:,i][0])
+
+    def change_colors(self, input_:dict|Sequence) -> None:
+
+        # NOTE: dont like that its basically reworking whats in colors.py... but for now ok.
+        # NOTE: ^ bc of that, not going to make tests (for now). instead just going to create default value on color init if color not recognized
+
+        if len(input_) != len(self.color_values):
+            raise ValueError(f'length must match numbers of colors ({len(self)}. got {len(input_)})')
+        self.colors.change_colors(input_)
+
+        # each needs to change the squares colors and the group_dict # TODO: make better later
+        if isinstance(input_, dict):
+            for i,j in zip(list(self.groups_dict), input_):
+                self.groups_dict[input_[j]] = self.groups_dict.pop(i)
+                for square in self.squares:
+                    if square.color == i:
+                        square.color = j
+
+        elif isinstance(input_, Sequence):
+            color_keys = [k for k in self.groups_dict if not k.startswith(tuple(['C', 'R']))]
+
+            for i,j in zip(list(color_keys), input_):
+                self.groups_dict[j] = self.groups_dict.pop(i)
+                for square in self.squares:
+                    if square.color == i:
+                        square.color = j
 
         
     def get_group_series(self, s:str) -> Group:
