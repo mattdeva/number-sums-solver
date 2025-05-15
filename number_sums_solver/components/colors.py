@@ -26,7 +26,8 @@ def _get_colors_components(excel_path:str, sheet_name:str|None=None) -> tuple[pd
         record = []
         for cell in row:
             if cell.fill and cell.fill.fgColor:
-                record.append(cell.fill.fgColor.rgb)
+                color = cell.fill.fgColor.rgb[-6:]
+                record.append(color)
             else:
                 record.append(None)
 
@@ -34,7 +35,7 @@ def _get_colors_components(excel_path:str, sheet_name:str|None=None) -> tuple[pd
                 continue
 
             if '(' in cell.value:
-                dict_[cell.fill.fgColor.rgb] = int(cell.value.split('(')[-1].split(')')[0])
+                dict_[color] = int(cell.value.split('(')[-1].split(')')[0])
             
         rows.append(record)
 
