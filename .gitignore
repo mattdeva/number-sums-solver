@@ -1,4 +1,5 @@
 *.pyc
 *.ipynb
 *.xlsx
+backup.py
 !data/dummy_puzzles.xlsx
