@@ -4,6 +4,7 @@ import math
 from PIL import Image, ImageDraw, ImageFont, ImageColor
 import matplotlib.colors as mcolors
 from matplotlib import pyplot as plt
+import matplotlib.patches as patches
 
 from number_sums_solver.components.square import Square
 from number_sums_solver.components.group import Group
@@ -105,6 +106,12 @@ def show_matrix(matrix:Matrix):
     for ax, square in zip(axes, tiles):
         ax.imshow(square)
         ax.axis('off')
+
+    # add legend with color groups target values
+    legend_patches = [patches.Patch(color=color, label=f"{color}: {count}") 
+                    for color, count in matrix.colors.target_dict.items()]
+    fig.legend(handles=legend_patches, loc='upper left', title="Legend")
+
 
     plt.tight_layout()
     plt.show()
