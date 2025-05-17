@@ -23,26 +23,22 @@ def _get_size(size:tuple|int) -> tuple[int]:
             raise ValueError(f"size must be RGB compatible tuple len 3. got {len(size)}")
     return size
 
-def _get_random_color(seed=None) -> tuple[str, tuple[int]]:
-    random.seed(seed)
-    color_name = random.choice(list(mcolors.CSS4_COLORS.keys())) 
-    rgb_tuple = tuple(int(v * 255) for v in mcolors.to_rgba(color_name)[:3])
-    return color_name, rgb_tuple
+# def _get_random_color(seed=None) -> tuple[str, tuple[int]]:
+#     random.seed(seed)
+#     color_name = random.choice(list(mcolors.CSS4_COLORS.keys())) 
+#     rgb_tuple = tuple(int(v * 255) for v in mcolors.to_rgba(color_name)[:3])
+#     return color_name, rgb_tuple
 
 def _get_color(color:tuple|str):
     if isinstance(color, tuple):
         if len(color) != 3:
             raise ValueError(f"size must be RGB compatible tuple len 3. got {len(color)}")
     elif isinstance(color, str):
-        try:
-            color = ImageColor.getrgb(color)
-        except ValueError as e: # NOTE: this part not working correctly yet. lower priority. after pushing changes, create issue
-            color_name, rgb_tuple = _get_random_color()
-            print(f'color {color} could not be identified. random color assignment {color_name}')
-            color = rgb_tuple
+       color = ImageColor.getrgb(color) # TODO: will fail if color cannot be converted to RBG should create acceptable color list
     return color 
 
 def _get_blank_tile(size:tuple|int=200, fill_color:tuple|str=(255,255,255)):
+    size = _get_size(size)
     return np.ones(size, dtype=np.uint8) * np.array(fill_color, dtype=np.uint8)
 
 def get_tile_image(
@@ -79,13 +75,14 @@ def get_tile_image(
 
     return np.array(img)
 
-def show_matrix(matrix:Matrix, size:int|tuple[int]=5):
+def show_matrix(matrix:Matrix):
 
-    size = _get_size(size)
+    # size = _get_size()
 
     len_ = _get_len(matrix.squares)
 
-    tiles = [np.ones((200,200,3), dtype=np.uint8) * np.array((255,255,255), dtype=np.uint8)]
+    # tiles = [np.ones((200,200,3), dtype=np.uint8) * np.array((255,255,255), dtype=np.uint8)]
+    tiles = [_get_blank_tile()]
 
     for row in range(len_):
         for col in range(len_):
@@ -93,12 +90,16 @@ def show_matrix(matrix:Matrix, size:int|tuple[int]=5):
                 continue
             tile = matrix.get_tile((row, col))
             if isinstance(tile, Square):
-                color = 'blue' if tile.color == 'FFE06666' else 'red' # 'FFE06666', 'FF6FA8DC'
-                tiles.append(get_tile_image(tile.value, fill_color=color))
+                # tiles.append(get_tile_image(tile.value, fill_color=tile.color))
+                if not tile.active:
+                    tiles.append(_get_blank_tile())
+                else:
+                    tiles.append(get_tile_image(tile.value, fill_color=tile.color))
             else:
                 tiles.append(get_tile_image(tile.nominal_target))
 
-    fig, axes = plt.subplots(len_, len_, figsize=size)
+    fig, axes = plt.subplots(len_, len_, figsize=None) # NOTE: not sure why this needs to be None
+
     axes = axes.flatten()
 
     for ax, square in zip(axes, tiles):
