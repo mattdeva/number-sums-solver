@@ -33,3 +33,15 @@ def test_change_colors_from_sequence():
     colors.change_colors(('red', 'blue'))
     colors.target_dict == {'red':6, 'blue':6}
     assert list(colors.col_df[2][1:]) == ['blue', 'blue', 'red']
+
+def test_blank():
+    blank = Colors.blank(2)
+    assert {'white':0} == blank.target_dict
+    pd.testing.assert_frame_equal(
+        blank.col_df,
+        pd.DataFrame({
+            0:['000000', '000000', '000000'],
+            1:['000000', 'white', 'white'],
+            2:['000000', 'white', 'white'],
+        })
+    )

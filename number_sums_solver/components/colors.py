@@ -63,12 +63,27 @@ class Colors:
     def from_excel(cls, path:str, sheet_name:str|None=None):
         col_df, target_dict = _get_colors_components(path, sheet_name)
         return cls(col_df, target_dict) 
+    
+    @classmethod
+    def blank(cls, size:int):
+        lists = []
+        for r in range(size+1):
+            row = []
+            for c in range(size+1):
+                if r == 0 or c == 0:
+                    row.append('000000')
+                else:
+                    row.append('white')
+            lists.append(row)
+        return cls(
+            pd.DataFrame(lists),{'white':0}
+        )
 
     @property
     def values(self):
         return list(self.target_dict)
     
-    # NOTE: not a bug fan of how i did the remapping.. what i did suggests there may be better way to organize things, but is good for now...
+    # NOTE: not a big fan of how i did the remapping.. what i did suggests there may be better way to organize things, but is good for now...
     def _remap_target_dict_from_sequence(self, sequence:Sequence) -> dict[str,int]:
         out_dict = {}
         # for i,j in zip(self.values, sequence): # not sure why this didnt work..
