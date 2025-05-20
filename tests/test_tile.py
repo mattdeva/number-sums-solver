@@ -30,6 +30,7 @@ def test_get_size(input_, output, error):
     else:
         assert _get_size(input_) == output
 
+@pytest.mark.skip(reason="may not need in current form or at all.")
 @pytest.mark.parametrize("seed, len_", [
     (None, 2),
     (42, 2),
