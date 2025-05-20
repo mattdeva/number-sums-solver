@@ -20,6 +20,9 @@ class Group:
     def __str__(self):
         return self.name
     
+    def __repr__(self):
+        return f"Group - nominal_target={self.nominal_target}. n-squares={len(self.squares)}"
+    
     def __getitem__(self, index):
         return self.squares[index]
 
