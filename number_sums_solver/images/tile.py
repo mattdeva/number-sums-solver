@@ -76,35 +76,36 @@ def get_tile_image(
 
     return np.array(img)
 
-def show_matrix(matrix:Matrix):
+def show_matrix(matrix:Matrix, plot_coordinates:bool=False):
 
     # size = _get_size()
 
     len_ = _get_len(matrix.squares)
 
-    # tiles = [np.ones((200,200,3), dtype=np.uint8) * np.array((255,255,255), dtype=np.uint8)]
     tiles = [_get_blank_tile()]
-
+    coordinates = [(0,0)] # big sloppy but ok 
     for row in range(len_):
         for col in range(len_):
             if row == 0 and col == 0:
                 continue
             tile = matrix.get_tile((row, col))
             if isinstance(tile, Square):
-                # tiles.append(get_tile_image(tile.value, fill_color=tile.color))
                 if not tile.active:
                     tiles.append(_get_blank_tile())
                 else:
                     tiles.append(get_tile_image(tile.value, fill_color=tile.color))
             else:
                 tiles.append(get_tile_image(tile.nominal_target))
+            coordinates.append((row, col))
 
     fig, axes = plt.subplots(len_, len_, figsize=None) # NOTE: not sure why this needs to be None
 
     axes = axes.flatten()
 
-    for ax, square in zip(axes, tiles):
+    for i, (ax, square) in enumerate(zip(axes, tiles)):
         ax.imshow(square)
+        if plot_coordinates and i>0:
+            ax.text(0.5, -.1, coordinates[i], fontsize=8, ha='center', transform=ax.transAxes)
         ax.axis('off')
 
     # add legend with color groups target values
