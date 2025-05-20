@@ -24,11 +24,12 @@ def _get_size(size:tuple|int) -> tuple[int]:
             raise ValueError(f"size must be RGB compatible tuple len 3. got {len(size)}")
     return size
 
-# def _get_random_color(seed=None) -> tuple[str, tuple[int]]:
-#     random.seed(seed)
-#     color_name = random.choice(list(mcolors.CSS4_COLORS.keys())) 
-#     rgb_tuple = tuple(int(v * 255) for v in mcolors.to_rgba(color_name)[:3])
-#     return color_name, rgb_tuple
+# NOTE: may not need in current form (or at all)... tbd
+def _get_random_color(seed=None) -> tuple[str, tuple[int]]:
+    random.seed(seed)
+    color_name = random.choice(list(mcolors.CSS4_COLORS.keys())) 
+    rgb_tuple = tuple(int(v * 255) for v in mcolors.to_rgba(color_name)[:3])
+    return color_name, rgb_tuple
 
 def _get_color(color:tuple|str):
     if isinstance(color, tuple):
