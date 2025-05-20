@@ -11,7 +11,7 @@ from typing import Sequence
 
 def _df_shapes_same(df1:pd.DataFrame, df2:pd.DataFrame):
     if not df1.shape == df2.shape:
-        raise ValueError(f'Dataframe shapes do not match')
+        raise ValueError(f'Dataframe shapes do not match. {df1.shape}, {df2.shape}')
 
 def _get_square_coords(df:pd.DataFrame) -> list[tuple[int]]:
     ''' should return all row,column tuple pairs for each cell in a dataframe. excludes any coord with 0. '''
@@ -63,6 +63,13 @@ class Matrix:
         return cls(
             _pull_cell_values_from_df(pd.read_excel(path, header=None, sheet_name=sheet_name)),
             Colors.from_excel(path, sheet_name=sheet_name)
+        )
+    
+    @classmethod
+    def zeros(cls, size:int, colors:bool=False):
+        return cls(
+            pd.DataFrame(np.zeros((size+1, size+1), dtype=int)),
+            Colors.blank(size) if colors else None
         )
     
     @property
@@ -142,8 +149,6 @@ class Matrix:
                     self._get_square_color(color_str),
                     self.colors.target_dict[color_str]
                 )
-        # create a _get_square_colors #TODO
-
         return groups_dict
 
     def _get_square(self, r:int, c:int) -> Square:
@@ -175,7 +180,43 @@ class Matrix:
             return _get_int(self.num_df.iloc[i][0])
         else:
             return _get_int(self.num_df.iloc[:,i][0])
+    
+    # NOTE: feels like the update functions couldve been done better.... 
+    def update_value(self, tup:tuple[int], new_value:int):
+        r,c = tup
+        tile = self.get_tile(tup)
+        if isinstance(tile, Group):
+            tile.nominal_target = new_value
+            self.num_df.iloc[r,c] = tile.nominal_target
+            self.groups_dict = self._get_groups_dict()
+        elif isinstance(tile, Square):
+            tile.value = new_value
+            self.num_df.iloc[r,c] = tile.value
 
+    def update_color(self, tup:tuple[int], new_color:str):
+        r,c = tup
+        if r == 0 or c == 0:
+            raise ValueError(f'group tile does not have color')
+        tile = self.get_tile(tup)
+        tile.color = new_color
+        self.colors.col_df.iloc[r,c] = tile.color
+        self.groups_dict = self._get_groups_dict()
+
+    def update_color_target(self, color:str, new_value:int):
+        self.colors.target_dict[color] = new_value
+        self.groups_dict = self._get_groups_dict()
+
+    def remove_color_taget(self, color:str):
+        if color not in self.colors.target_dict:
+            print(f'{color} not in target colors: {list(self.colors.target_dict)}')
+        self.colors.target_dict = {k:v for k,v in self.colors.target_dict.items() if k != color}
+        self.groups_dict = self._get_groups_dict()
+
+    def update_square(self, tup:tuple[int], new_value:int, new_color:str|None=None):
+        if new_color:
+            self.update_color(tup, new_color)
+        self.update_value(tup, new_value)
+    
     def change_colors(self, input_:dict|Sequence) -> None:
 
         # NOTE: dont like that its basically reworking whats in colors.py... but for now ok.
@@ -208,11 +249,6 @@ class Matrix:
         
     def get_tile(self, tup:tuple[int]) -> Group|Square:
         ''' '''
-        # TODO: add test
-        # _transform_index(matrix, (0,1)) # -> Group C1
-        # _transform_index(matrix, (1,0)) # -> Group R1
-        # _transform_index(matrix, (1,1)) # -> Square(1, 1, 3, True, False)
-
         if not isinstance(tup, tuple):
             raise ValueError(f'input must be tuple. got {type(tup)}')
         if tup == (0,0):

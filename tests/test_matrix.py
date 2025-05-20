@@ -4,6 +4,7 @@ import numpy as np
 
 from number_sums_solver.components.square import Square
 from number_sums_solver.components.group import Group
+from number_sums_solver.components.colors import Colors
 from number_sums_solver.components.matrix import (
     _df_shapes_same,
     _get_square_coords,
@@ -161,3 +162,41 @@ def test_get_target_value(i, axis, target_value, raise_error, matrix_1):
 ])
 def test_get_tile(tuple, output_type, matrix_1):
     assert isinstance(matrix_1.get_tile(tuple), output_type)
+
+def test_zeros():
+    zeros_w_color = Matrix.zeros(2,True)
+    zeros_no_color = Matrix.zeros(2,False)
+
+    assert zeros_no_color.colors is None
+    assert isinstance(zeros_w_color.colors, Colors)
+    pd.testing.assert_frame_equal(
+        zeros_no_color.num_df,
+        pd.DataFrame(np.zeros((3,3), dtype=int))
+    )
+    pd.testing.assert_frame_equal(
+        zeros_w_color.num_df,
+        pd.DataFrame(np.zeros((3,3), dtype=int))
+    )
+
+def test_update_value():
+    m = Matrix.zeros(3, True)
+    m.update_square((0,1), 3)
+    m.update_square((1,0), 4)
+    m.update_square((1,1), 3, 'red')
+
+    assert isinstance(m.get_tile((0,1)), Group)
+    assert m.get_tile((0,1)).nominal_target == 3
+    assert isinstance(m.get_tile((1,0)), Group)
+    assert m.get_tile((1,0)).nominal_target == 4
+    assert isinstance(m.get_tile((1,1)), Square)
+    assert m.get_tile((1,1)).value == 3
+    assert m.get_tile((1,1)).color == 'red'
+
+def test_update_color():
+    m = Matrix.zeros(3, True)
+    
+    m.update_color_target('red', 6)
+    m.update_color_target('blue', 6)
+    m.remove_color_taget('white')
+
+    assert m.colors.target_dict == {'red': 6, 'blue': 6}
