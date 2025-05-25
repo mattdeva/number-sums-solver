@@ -77,7 +77,7 @@ def get_tile_image(
 
     return np.array(img)
 
-def show_matrix(matrix:Matrix, plot_coordinates:bool=False):
+def show_matrix(matrix:Matrix, plot_coordinates:bool=False, show:bool=True):
 
     # size = _get_size()
 
@@ -116,4 +116,7 @@ def show_matrix(matrix:Matrix, plot_coordinates:bool=False):
 
 
     plt.tight_layout()
-    plt.show()
+    if show:
+        plt.show()
+    else:
+        return fig
