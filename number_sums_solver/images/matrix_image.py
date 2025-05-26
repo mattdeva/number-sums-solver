@@ -1,12 +1,13 @@
 import numpy as np
 import pandas as pd
-import math
 import cv2
 import matplotlib.pyplot as plt
 import itertools
 from collections import defaultdict
 
 from number_sums_solver.components.matrix import Matrix
+from number_sums_solver.components.utils import len_is_sqrt
+from number_sums_solver.components.square import Square
 from number_sums_solver.images.region import Region
 from number_sums_solver.images.region_funcs import (
     get_neighboring_regions,
@@ -36,16 +37,24 @@ def _cluster_points(regions:list[Region], epsilon:int=25) -> list[list[Region]]:
 def _sort_regions(regions:list[Region]) -> list[Region]:
     return sorted(regions, key=lambda r: r._x)
 
-def _df_from_value_list(list_:Sequence[int]) -> pd.DataFrame:
-    length = len(list_)
-    if math.isqrt(length)**2 != length:
-        raise ValueError("length of the list must be a perfect square. got {length}")
-    
-    n = math.isqrt(length) 
-    
-    # Reshape the list row-wise into a matrix
-    return pd.DataFrame([list_[i * n:(i + 1) * n] for i in range(n)]) # create records of length n from list
+def _get_squares_from_regions(regions:Sequence[Region]) -> list[Square]:
+    # probably my least favorite function in this whole thing...
+    if not len_is_sqrt([0]+regions): # not my fav
+        raise ValueError(f'regions must be of length 1 less of a perfect sqaure. got {len(regions)}')
 
+    size = int((len(regions)+1)**(1/2))
+
+    squares = []
+    i = 0
+    for r in range(size):
+        for c in range(size):
+            if r == 0 and c == 0:
+                continue
+            squares.append(
+                Square(r,c,regions[i].value, regions[i].color)
+            )
+            i += 1
+    return squares
 
 class MatrixImage:
     def __init__(
@@ -65,7 +74,8 @@ class MatrixImage:
         self._chain_approx_simple = chain_approx_simple
 
         # not great practice but helpful for troubleshooting...
-        self._processed_regions = None
+        self._processed_tile_value_regions = None
+        self._processed_squares = None
 
     @classmethod
     def from_path(cls, path:str):
@@ -159,9 +169,14 @@ class MatrixImage:
         # 6c. Flatten list
         aligned_regions = list(itertools.chain.from_iterable(region_clusters))
 
-        # 7. Store these to help debug what went wrong in image processing
-        self._processed_regions = aligned_regions
+        # 8. Create squares from matrix
+        squares = _get_squares_from_regions(aligned_regions)
 
-        return Matrix(
-            _df_from_value_list([0]+[r.value for r in aligned_regions])
+        # 7. Store these to help debug what went wrong in image processing
+        self._processed_tile_value_regions = aligned_regions
+        self._processed_squares = squares
+
+        return Matrix.from_squares(
+            squares,
+            None
         )
