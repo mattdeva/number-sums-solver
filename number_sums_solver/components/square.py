@@ -3,7 +3,7 @@ class Square:
         self.r = r
         self.c = c
         self.value = value
-        self.color = color # logic should incorporate this eventually... but fine for v0 not to
+        self.color = 'white' if color is None else color
         self.active = active
         self.selected = selected
 
