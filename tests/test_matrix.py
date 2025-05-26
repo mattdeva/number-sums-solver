@@ -200,3 +200,20 @@ def test_update_color():
     m.remove_color_taget('white')
 
     assert m.colors.target_dict == {'red': 6, 'blue': 6}
+
+def test_from_squares():
+    squares = [
+        Square(0,1,0),
+        Square(0,2,0),
+        Square(1,0,0),
+        Square(1,1,0),
+        Square(1,2,0),
+        Square(2,0,0),
+        Square(2,1,0),
+        Square(2,2,0),
+    ]
+
+    assert isinstance(Matrix.from_squares(squares), Matrix)
+    
+    with pytest.raises(ValueError):
+        Matrix.from_squares(squares[:4])

@@ -4,7 +4,7 @@ from itertools import product
 
 from number_sums_solver.components.square import Square
 from number_sums_solver.components.group import Group
-from number_sums_solver.components.utils import _is_square_df
+from number_sums_solver.components.utils import _is_square_df, df_from_value_list
 from number_sums_solver.components.colors import Colors
 
 from typing import Sequence
@@ -41,18 +41,22 @@ def _get_int(input_:object):
         raise ValueError(f'Input must be int-like. got {type(input_)}')
     
 class Matrix:
-    def __init__(self, num_df:pd.DataFrame, colors:Colors|None=None):
+    def __init__(
+            self, num_df:pd.DataFrame, 
+            colors:Colors|None=None,
+            squares:Sequence[Square]|None=None, 
+        ):
         
         ## checks to see if df is square
         _is_square_df(num_df)
-        
+
         ## init
         # NOTE: i couldve done a 3D array instead of multiple dfs.. but i opted for this.. 
             # i think makes a little easier/straightforward in the case of no colors. but up for debate
         self.num_df = num_df
         self.colors = self._check_colors(self.num_df, colors)
+        self.squares = self._make_squares(self.num_df, self.colors) if squares is None else squares
 
-        self.squares = self._make_squares(self.num_df, self.colors)
         self.groups_dict = self._get_groups_dict()
     
     def __len__(self):
@@ -70,6 +74,16 @@ class Matrix:
         return cls(
             pd.DataFrame(np.zeros((size+1, size+1), dtype=int)),
             Colors.blank(size) if colors else None
+        )
+    
+    @classmethod
+    def from_squares(cls, squares:Sequence[Square], colors:bool=False):
+        df = df_from_value_list([0]+[s.value for s in squares])
+        size = df.shape[0]
+        return cls(
+            df,
+            Colors.blank(size) if colors else None,
+            squares
         )
     
     @property
