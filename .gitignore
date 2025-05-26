@@ -3,3 +3,4 @@
 *.xlsx
 backup.py
 !data/dummy_puzzles.xlsx
+!demo/demo.ipynb
