@@ -4,11 +4,47 @@ import math
 import cv2
 import matplotlib.pyplot as plt
 import itertools
-import pytesseract
+from collections import defaultdict
 
-from typing import Sequence, Optional
+from number_sums_solver.components.matrix import Matrix
+from number_sums_solver.images.region import Region
+from number_sums_solver.images.region_funcs import (
+    get_neighboring_regions,
+    filter_intersection_area,
+    merge_regions
+)
 
-pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
+from typing import Sequence
+
+
+def _cluster_points(regions:list[Region], epsilon:int=25) -> list[list[Region]]:
+    # copilot code -- clusters coordinates into groups based on y values
+    regions.sort(key=lambda r: r._y) # sort by y
+    clusters_dict = defaultdict(list) # {y_cluster:int, list[Region]}
+
+    for region in regions:
+        assigned = False
+        for cluster_y in clusters_dict.keys(): # loop through found unique clusters
+            if abs(cluster_y - region._y) <= epsilon:
+                clusters_dict[cluster_y].append(region)
+                assigned = True # dont need to create cluster
+                break
+        if not assigned: # if point doesnt belong to known cluster
+            clusters_dict[region._y].append(region) # create cluster with y value
+    return [v for v in clusters_dict.values()]
+
+def _sort_regions(regions:list[Region]) -> list[Region]:
+    return sorted(regions, key=lambda r: r._x)
+
+def _df_from_value_list(list_:Sequence[int]) -> pd.DataFrame:
+    length = len(list_)
+    if math.isqrt(length)**2 != length:
+        raise ValueError("length of the list must be a perfect square. got {length}")
+    
+    n = math.isqrt(length) 
+    
+    # Reshape the list row-wise into a matrix
+    return pd.DataFrame([list_[i * n:(i + 1) * n] for i in range(n)]) # create records of length n from list
 
 
 class MatrixImage:
@@ -28,6 +64,9 @@ class MatrixImage:
         self._retr_external = retr_external
         self._chain_approx_simple = chain_approx_simple
 
+        # not great practice but helpful for troubleshooting...
+        self._processed_regions = None
+
     @classmethod
     def from_path(cls, path:str):
         return cls(cv2.imread(path))
@@ -43,6 +82,16 @@ class MatrixImage:
     @property
     def contours(self):
         return cv2.findContours(self.edge, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[0]
+    
+    @property
+    def tile_regions(self):
+        return [Region.from_contour(self.image, c) for c in self.contours]
+
+    @property
+    def processed_regions(self):
+        if self._processed_regions is None:
+            print('processed regions only available after calling `to_matrix`. this is meant for dev only.')
+        return self._processed_regions
     
     def show_image_with_axis(self):
         plt.imshow(self.image)
@@ -62,119 +111,57 @@ class MatrixImage:
         plt.axis(False)
         plt.show()
 
-def int_from_img(img) -> Optional[int]:
-    str_ = pytesseract.image_to_string(img, config='--psm 8 -c tessedit_char_whitelist=0123456789').replace('\n','')    
-    return None if str_ == '' else int(str_)
+    def to_matrix(self) -> Matrix:
+        # 0. create regions
+        regions = self.tile_regions
 
-def parse_values_from_image(
-        matrix_image:MatrixImage=None,
-        x_y_buffer:range=range(5,25,5), 
-        w_h_buffer:range=range(10,30,5), 
-        verbose=False
-    ):
-    value_dict = {}
-    missing_value_regions = {}
-    for i, contour in enumerate(matrix_image.contours):
-        for buffers in itertools.product(x_y_buffer, w_h_buffer):
-            x,y,w,h = cv2.boundingRect(contour)
-            x-=buffers[0]
-            y-=buffers[0]
-            w+=buffers[1]
-            h+=buffers[1]
-            region = matrix_image.grey[y:y + h, x:x + w]
+        ## 1. Find dupliacte regions
 
-            img_decode = int_from_img(region)
+        # 1a. Create gdf of neighbors
+        initial_neighbors_gdf = get_neighboring_regions(regions)
 
-            if isinstance(img_decode, int):
-                value_dict[(x,y)] = img_decode
-                break
-        if img_decode is None:
-            # if/when build model can include here
-            if verbose:
-                print(f'cannot identify value. {i}')
-            x,y,w,h = cv2.boundingRect(contour)
-            missing_value_regions[(x,y)] = matrix_image.grey[y:y + h, x:x + w]
+        # 1b. Filter by intersection area. Only keep regions with high overlap
+        overlap_regions_gdf = filter_intersection_area(initial_neighbors_gdf)
 
-    return value_dict, missing_value_regions
+        # 1c. Merge overlap regions to one
+        merged_overlap_regions, drop_overlap_regions = merge_regions(overlap_regions_gdf)
 
-def find_pairs(coordinates:Sequence[tuple[int]], x_buffer:int=75, y_buffer:int=10) -> list[tuple[int]]:
-    ''' return coordinates that within specified buffer '''
-    # NOTE: limiting to pairs instead of an unspecified number of values is a potential bug (feature improvement opportunity)
-    pairs = []
-    for tup in coordinates:
-        x,y = tup
-        possible_pairs = [t for t in coordinates if 0 < t[0]-x < x_buffer] # return coordinates to the right of x position within buffer
-        possible_pairs = [t for t in possible_pairs if -1*y_buffer < t[1]-y < y_buffer] # return coordinates within buffer of y position
+        ## 2. Remove duplicates. Merge regions with large overlap.
 
-        if len(possible_pairs) > 1:
-            raise ValueError(f'more than 1 possible pair identified. {tup}, {possible_pairs}')
-        if len(possible_pairs) == 1:
-            pairs.append((tup, possible_pairs[0]))
+        # 2a. Remove duplicates
+        regions = [r for r in regions if r not in drop_overlap_regions]
 
-    return pairs
+        # 2b. Add the new merged regions to regions
+        regions.extend(merged_overlap_regions)
 
-def concat_digits(*args):
-    return int("".join([str(arg) for arg in args]))
+        ## 3. Find 2-digit numbers (yes hardcapped at 2 digits. Possible future issue.)
+        
+        # 3a. Create gdf of neighbors
+        real_neighbors_gdf = get_neighboring_regions(regions) # great variable name
 
-def create_multi_digit_dict(coordinates:Sequence[tuple[tuple[int]]], coord_value_dict:dict[tuple[int], int]) -> dict[tuple[int],int]: # great name
-    ''' take sequence of individual digits that should be considered 1, create dictionary with starting coordinate (key) and value (value)'''
-    # NOTE: only works if pairs
-    multi_digit_dict = {}
-    for tup in coordinates:
-        c1, c2 = coord_value_dict[tup[0]], coord_value_dict[tup[1]]
-        multi_digit_dict[tup[0]] = concat_digits(c1,c2)
+        # 3b. Create 2 digit numbers via merge
+        merged_dubdigit_regions, drop_dubdigit_regions = merge_regions(real_neighbors_gdf) # great variable name x2
 
-    return multi_digit_dict
+        # 4. Remove individual regions from of 2-digit numbers
+        regions = [r for r in regions if r not in drop_dubdigit_regions]
 
-def update_value_dict(
-        value_dict:dict[tuple[int], int],
-        pairs:Sequence[tuple[tuple[int]]],
-        multi_digit_dict:dict[tuple[int], int]
-    ):
-    return {**{(0,0):0}, **{k:v for k,v in value_dict.items() if k not in [p[1] for p in pairs]}, **multi_digit_dict}
+        # 5. Add merged double digit regions to regions
+        regions.extend(merged_dubdigit_regions)
 
-def floor_round(number:int):
-    return math.floor(number/100)*100
+        # 6. Align regions Y, then X coordinates
 
-def create_value_tuple(d:dict[tuple[int], int]) -> tuple[int]:
-    ''' create sorted list of tuples'''
-    list_ = [(k[0], k[1], v) for k,v in d.items()]
-    return sorted(list_, key=lambda x: (floor_round(x[1]), x[0]))
+        # 6a. Group regions into clusters based on Y coordinates (rows)
+        region_clusters = _cluster_points(regions) # region_clusters: list[list[Region]]
 
-def df_from_value_list(list_:list[int]) -> pd.DataFrame:
-    length = len(list_)
-    if math.isqrt(length)**2 != length:
-        raise ValueError("length of the list must be a perfect square. got {length}")
-    
-    n = math.isqrt(length) 
-    
-    # Reshape the list row-wise into a matrix
-    return pd.DataFrame([list_[i * n:(i + 1) * n] for i in range(n)]) # create records of length n from list
+        # 6b. Order by X within each cluster
+        region_clusters = [_sort_regions(l) for l in region_clusters]
 
-def df_from_matrix_iamge(
-        matrix_image:MatrixImage, 
-        x_y_buffer:range=range(5,25,5), 
-        w_h_buffer:range=range(10,30,5), 
-        x_buffer:int=75, 
-        y_buffer:int=10,
-        verbose=False
-    ):
-    ''' wrapper function to parse values from image and create dataframe '''
+        # 6c. Flatten list
+        aligned_regions = list(itertools.chain.from_iterable(region_clusters))
 
-    # create dictionary of coordinates of number start (top left of contour), and the value {(x_coord, y_coord):cell_value}
-    value_dict = parse_values_from_image(matrix_image, x_y_buffer, w_h_buffer, verbose)[0]
+        # 7. Store these to help debug what went wrong in image processing
+        self._processed_regions = aligned_regions
 
-    # from the dictionary, identify digits that are apart of the same number (2 digit numbers)
-    pairs = find_pairs(list(value_dict), x_buffer, y_buffer)
-
-    # create a dictionary from the double digit numbers. number start (top left of first digit contour) and value {(x_coord, y_coord):cell_value}
-    multi_digit_dict = create_multi_digit_dict(pairs, value_dict)
-
-    # update the dictionary to include double digit numbers (making new variable for debugging)
-    updated_value_dict = update_value_dict(value_dict, pairs, multi_digit_dict)
-
-    # create ordered list ordering by the y-values, the x-values. additionally, add a 0 to start
-    value_list = [t[2] for t in create_value_tuple(updated_value_dict)]
-
-    # convert the ordered list to dataframe. create rowise. length of columns (and rows) will be sqrt of value_list length
-    return df_from_value_list(value_list)
+        return Matrix(
+            _df_from_value_list([0]+[r.value for r in aligned_regions])
+        )
