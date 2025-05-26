@@ -1,7 +1,7 @@
 import numpy as np
 import random
 import math
-from PIL import Image, ImageDraw, ImageFont, ImageColor
+from PIL import Image, ImageDraw, ImageFont, ImageColor, ImageOps
 import matplotlib.colors as mcolors
 from matplotlib import pyplot as plt
 import matplotlib.patches as patches
@@ -31,12 +31,16 @@ def _get_random_color(seed=None) -> tuple[str, tuple[int]]:
     rgb_tuple = tuple(int(v * 255) for v in mcolors.to_rgba(color_name)[:3])
     return color_name, rgb_tuple
 
-def _get_color(color:tuple|str):
+def _get_color(color:tuple|str): # very not great color
     if isinstance(color, tuple):
         if len(color) != 3:
             raise ValueError(f"size must be RGB compatible tuple len 3. got {len(color)}")
+        return color # assume len 3 tuples are RGB
     elif isinstance(color, str):
-       color = ImageColor.getrgb(color) # TODO: will fail if color cannot be converted to RBG should create acceptable color list
+        if color == '000000': # dont love that this is hardcoded but ok
+           color = ImageColor.getrgb('white')
+        else:
+           color = ImageColor.getrgb(color) # TODO: will fail if color cannot be converted to RBG should create acceptable color list
     return color 
 
 def _get_blank_tile(size:tuple|int=200, fill_color:tuple|str=(255,255,255)):
@@ -60,6 +64,7 @@ def get_tile_image(
 
     # convert to img and draw objects
     img = Image.fromarray(np_img)
+    img = ImageOps.expand(img, border=3, fill="black")
     draw = ImageDraw.Draw(img)
     
     # get text and font
@@ -110,10 +115,10 @@ def show_matrix(matrix:Matrix, plot_coordinates:bool=False, show:bool=True):
         ax.axis('off')
 
     # add legend with color groups target values
-    legend_patches = [patches.Patch(color=color, label=f"{color}: {count}") 
-                    for color, count in matrix.colors.target_dict.items()]
-    fig.legend(handles=legend_patches, loc='upper left', title="Legend")
+    if matrix.colors:
+        legend_patches = [patches.Patch(color=color, label=f"{color}: {count}") for color, count in matrix.colors.target_dict.items()]
 
+        fig.legend(handles=legend_patches, loc='upper left', title="Legend")
 
     plt.tight_layout()
     if show:
