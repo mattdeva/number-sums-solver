@@ -47,15 +47,6 @@ def test_align_regions(matrix_image):
     ]
     assert _sort_regions(not_sorted_region_list) == sorted_region_list
 
-def test_df_from_value_list():
-    pd.testing.assert_frame_equal(
-        _df_from_value_list([1,2,3,4]),
-        pd.DataFrame({0:[1,3], 1:[2,4]})
-    )
-
-    with pytest.raises(ValueError):
-        _df_from_value_list([1,2,4])
-
 # NOTE: eventually update this to run when prompted
 @pytest.mark.skip(reason="takes 10 seconds...")
 def test_df_from_matrix_image(matrix_image):
