@@ -9,11 +9,12 @@ import matplotlib.patches as patches
 from number_sums_solver.components.square import Square
 from number_sums_solver.components.group import Group
 from number_sums_solver.components.matrix import Matrix
+from number_sums_solver.components.utils import len_is_sqrt
 
 def _get_len(list_:list) -> int:
     length = len(list_)
     if math.isqrt(length)**2 != length:
-        raise ValueError("length of the list must be a perfect square. got {length}")
+        raise ValueError(f"length of the list must be a perfect square. got {length}")
     return int(length**(1/2)+1)
 
 def _get_size(size:tuple|int) -> tuple[int]:
@@ -23,13 +24,6 @@ def _get_size(size:tuple|int) -> tuple[int]:
         if len(size) != 3:
             raise ValueError(f"size must be RGB compatible tuple len 3. got {len(size)}")
     return size
-
-# NOTE: may not need in current form (or at all)... tbd
-def _get_random_color(seed=None) -> tuple[str, tuple[int]]:
-    random.seed(seed)
-    color_name = random.choice(list(mcolors.CSS4_COLORS.keys())) 
-    rgb_tuple = tuple(int(v * 255) for v in mcolors.to_rgba(color_name)[:3])
-    return color_name, rgb_tuple
 
 def _get_color(color:tuple|str): # very not great color
     if isinstance(color, tuple):
@@ -53,8 +47,6 @@ def get_tile_image(
         fill_color:tuple|str=(255,255,255),
         font_input:tuple=("arial.ttf", 120)
     ) -> np.ndarray:
-
-    #TODO: change the file name to 'tiles?'. call this value to tile. will make a new one 'selected_tile'
 
     size = _get_size(size)
     fill_color = _get_color(fill_color)
@@ -84,9 +76,8 @@ def get_tile_image(
 
 def show_matrix(matrix:Matrix, plot_coordinates:bool=False, show:bool=True):
 
-    # size = _get_size()
-
-    len_ = _get_len(matrix.squares)
+    len_is_sqrt(matrix.squares+[0])
+    len_ = int(1+len(matrix.squares)**(1/2))
 
     tiles = [_get_blank_tile()]
     coordinates = [(0,0)] # big sloppy but ok 
