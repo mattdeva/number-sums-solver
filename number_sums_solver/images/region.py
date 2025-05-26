@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 from shapely import Polygon
+from PIL import ImageColor
+import webcolors
 
 import pytesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
@@ -20,6 +22,21 @@ def _int_from_img(img) -> Optional[int]:
     str_ = pytesseract.image_to_string(img, config='--psm 8 -c tessedit_char_whitelist=0123456789').replace('\n','')    
     return None if str_ == '' else int(str_)
 
+def _get_color_dict():
+    # in the future, may want to have subset of colors available
+    return {color:ImageColor.getrgb(color) for color in webcolors.names("css3")}
+
+def _get_nearest_color(code, color_dict):
+    if len(code) != 3:
+        raise ValueError(f'expected color code to be length 3. got {len(code)}')
+    
+    d_arr = np.array([0]*len(color_dict))
+    for i in range(len(code)):
+        d_arr += np.array([abs(code[i] - t[i]) for t in color_dict.values()])
+
+    # indexing dict this way not ideal, but should be fine
+    return list(color_dict)[d_arr.argmin()]
+
 class Region:
     def __init__(
             self, 
@@ -32,7 +49,8 @@ class Region:
             x_buffer:int=10, 
             y_buffer:int=10, 
             w_buffer:int=15, 
-            h_buffer:int=15
+            h_buffer:int=15,
+            color:str|None=None
         ):
 
         self.img = img
@@ -45,6 +63,7 @@ class Region:
         self.y_buffer = y_buffer
         self.w_buffer = w_buffer
         self.h_buffer = h_buffer
+        self._color = color
 
         self._value_img = None
 
@@ -105,6 +124,18 @@ class Region:
     @property
     def polygon(self):
         return Polygon([(self.x, self.y), (self.x + self.w, self.y), (self.x + self.w, self.y + self.h), (self.x, self.y + self.h)])
+
+    @property
+    def color_code(self):
+        # get the pixel at the bottom right of the region
+        return self.img[self.y+self.h, self.x+self.w]
+    
+    @property
+    def color(self):
+        if self._color is None:
+            color_dict = _get_color_dict()
+            self._color = _get_nearest_color(self.color_code, color_dict)
+        return 
 
     def _clip(self) -> np.ndarray:
         return self.img[self.y:self.y + self.h, self.x:self.x + self.w]
