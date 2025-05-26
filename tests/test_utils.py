@@ -1,7 +1,7 @@
 import pytest
 import pandas as pd
 
-from number_sums_solver.components.utils import _flatten_and_unique, _is_square_df
+from number_sums_solver.components.utils import _flatten_and_unique, _is_square_df, df_from_value_list
 
 @pytest.mark.parametrize("input_, output", [
     ([[1,2,3]], [1,2,3]),  # one flat list
@@ -21,3 +21,12 @@ def test_is_square_df(df, raise_error):
             _is_square_df(df)
     else:
         _is_square_df(df)  # Should not raise an error
+
+def test_df_from_value_list():
+    pd.testing.assert_frame_equal(
+        df_from_value_list([1,2,3,4]),
+        pd.DataFrame({0:[1,3], 1:[2,4]})
+    )
+
+    with pytest.raises(ValueError):
+        df_from_value_list([1,2,4])
