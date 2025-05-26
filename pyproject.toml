@@ -21,6 +21,7 @@ dependencies = [
     "shapely (>=2.1.1,<3.0.0)",
     "geopandas (>=1.0.1,<2.0.0)",
 ]
+packages = [{include = "*", from="number_sums_solver"}]
 
 
 [build-system]
