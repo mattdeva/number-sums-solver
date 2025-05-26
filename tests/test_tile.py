@@ -3,7 +3,6 @@ import pytest
 from number_sums_solver.images.tile import (
     _get_len,
     _get_size,
-    _get_random_color,
     _get_color
 )
 
@@ -29,19 +28,6 @@ def test_get_size(input_, output, error):
             _get_size(input_)
     else:
         assert _get_size(input_) == output
-
-@pytest.mark.skip(reason="may not need in current form or at all.")
-@pytest.mark.parametrize("seed, len_", [
-    (None, 2),
-    (42, 2),
-])
-def test_get_random_color(seed, len_):
-    tup = _get_random_color(seed)
-    assert len(tup) == len_
-    assert isinstance(tup, tuple)
-    assert isinstance(tup[0], str)
-    assert isinstance(tup[1], tuple)
-    assert len(tup[1]) == 3
 
 @pytest.mark.parametrize("input_, output", [
     ((255, 0, 0), (255, 0, 0)), 

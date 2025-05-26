@@ -31,7 +31,7 @@ class TestSquare:
     # Test default attribute values
     def test_default_values(self):
         square = Square(1, 2, 3)
-        assert square.color is None 
+        assert square.color == 'white' 
         assert square.active is True
         assert square.selected is False
 
