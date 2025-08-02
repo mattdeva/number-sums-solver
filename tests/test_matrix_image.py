@@ -6,7 +6,6 @@ from number_sums_solver.images.matrix_image import (
     MatrixImage,
     _cluster_points,
     _sort_regions,
-    _df_from_value_list,
 )
 
 @pytest.fixture
