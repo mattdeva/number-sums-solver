@@ -26,9 +26,9 @@ The number sums puzzle is a game in which the player will attempt to select the 
 There are several ways to load a puzzle into the program:
 1. Programatically create the puzzle using solver functions
 2. Create the puzzle in an excel file
-3. Upload an image of the puzzle (currently not able to handle colors)
+3. Upload an image of the puzzle
 
-See demos for more detail.
+See demo for more detail.
 
 # Future development
 The main functions that need to be completed include finishing the image processing to handle puzzles with colors and creating a GUI where users are able to create puzzles more easily.
