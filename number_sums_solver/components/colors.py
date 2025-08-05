@@ -56,8 +56,8 @@ class Colors:
         df_values = _df_unique_values(self.col_df)
         dict_keys = list(self.target_dict)
 
-        if not sorted(df_values) == sorted(dict_keys):
-            raise ValueError(f'DataFrame and Target_Dict must have same values. got {df_values} and {dict_keys}')
+        if not all([v in df_values for v in dict_keys]):
+            raise ValueError(f'Target_Dict keys must be in DataFrame values. got df_values:{df_values} and keys:{dict_keys}')
         
     @classmethod
     def from_excel(cls, path:str, sheet_name:str|None=None):
