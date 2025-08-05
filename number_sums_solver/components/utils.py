@@ -19,7 +19,7 @@ def len_is_sqrt(sequence:int) -> bool:
     
 def df_from_value_list(sequence:Sequence[int]) -> pd.DataFrame:
     if not len_is_sqrt(sequence):
-        raise ValueError("length of the list must be a perfect square. got {length}")
+        raise ValueError(f"length of the list must be a perfect square. got {len(sequence)}")
     
     n = math.isqrt(len(sequence)) 
     
