@@ -5,14 +5,17 @@ import matplotlib.pyplot as plt
 import numpy as np
 import random
 from shapely import Polygon
+import statistics
 from PIL import ImageColor
 import webcolors
 
 import pytesseract
 pytesseract.pytesseract.tesseract_cmd = r'C:\Program Files\Tesseract-OCR\tesseract.exe'
 
-from typing import Optional
+from typing import Optional, Any
 
+# also TODO: limit available colors so that we dont have to worry (as much) about stuff like this :/ (also this is in region...)
+WHITES = ['white', 'whitesmoke', 'gainsboro', 'linen', 'mintcream', 'ivory', 'ghostwhite']
 
 def _get_rand_scale(start:float, end:float, seed=None):
     random.seed(seed)
@@ -21,10 +24,6 @@ def _get_rand_scale(start:float, end:float, seed=None):
 def _int_from_img(img) -> Optional[int]:
     str_ = pytesseract.image_to_string(img, config='--psm 8 -c tessedit_char_whitelist=0123456789').replace('\n','')    
     return None if str_ == '' else int(str_)
-
-def _get_color_dict():
-    # in the future, may want to have subset of colors available
-    return {color:ImageColor.getrgb(color) for color in webcolors.names("css3")}
 
 def _get_nearest_color(code, color_dict):
     if len(code) != 3:
@@ -37,6 +36,34 @@ def _get_nearest_color(code, color_dict):
     # indexing dict this way not ideal, but should be fine
     return list(color_dict)[d_arr.argmin()]
 
+def _get_color_dict():
+    # in the future, may want to have subset of colors available
+    return {color:ImageColor.getrgb(color) for color in webcolors.names("css3")}
+
+class Pixel:
+    def __init__(self, r:int, g:int, b:int):
+        self.r = r
+        self.g = g
+        self.b = b
+
+    def __repr__(self):
+        return f"Pixel(r={self.r}, g={self.g}, b={self.b})"
+    
+    def __eq__(self, other:Any):
+        if isinstance(other, Pixel):
+            return (
+                self.r == other.r and
+                self.g == other.g and
+                self.b == other.b
+            )
+        return False
+
+    def __hash__(self):
+        return hash((self.r, self.b, self.g))
+
+    def to_numpy(self) -> np.ndarray:
+        return np.array([self.r, self.g, self.b], dtype=int)
+
 class Region:
     def __init__(
             self, 
@@ -46,10 +73,10 @@ class Region:
             w:int, 
             h:int, 
             value:int|None=None, 
-            x_buffer:int=10, 
-            y_buffer:int=10, 
-            w_buffer:int=15, 
-            h_buffer:int=15,
+            x_buffer:int=5, 
+            y_buffer:int=5, 
+            w_buffer:int=10, 
+            h_buffer:int=10,
             color:str|None=None
         ):
 
@@ -126,16 +153,33 @@ class Region:
         return Polygon([(self.x, self.y), (self.x + self.w, self.y), (self.x + self.w, self.y + self.h), (self.x, self.y + self.h)])
 
     @property
-    def color_code(self):
-        # get the pixel at the bottom right of the region
-        return self.img[self.y+self.h, self.x+self.w]
-    
+    def pixel_samples(self) -> dict[str,Pixel]:
+        # opted to go with samples instead of mode of the whole region (in theory it could be black..)
+        # here is code (new property) for whole region all_pixels = [Pixel(*a) for a in self._clip().reshape(-1, 3)]
+        return {
+            'top_left':Pixel(*self.img[self.y, self.x]),
+            'top_right':Pixel(*self.img[self.y, self.x+self.w]),
+            'left':Pixel(*self.img[self.y+int(self.h/2), self.x]),
+            'right':Pixel(*self.img[self.y+int(self.h/2), self.x+self.w]),
+            'bottom_left':Pixel(*self.img[self.y+self.h, self.x]),
+            'bottom_right':Pixel(*self.img[self.y+self.h, self.x+self.w]),
+        }
+
+    @property
+    def pixel_mode(self) -> Pixel:
+        return statistics.mode(self.pixel_samples.values())
+
     @property
     def color(self):
         if self._color is None:
             color_dict = _get_color_dict()
-            self._color = _get_nearest_color(self.color_code, color_dict)
-        return 
+            self._color = _get_nearest_color(self.pixel_mode.to_numpy(), color_dict)
+        return self._color
+    
+    @property
+    def is_white(self) -> bool:
+        # not sure if this is being used?
+        return self.color in WHITES
 
     def _clip(self) -> np.ndarray:
         return self.img[self.y:self.y + self.h, self.x:self.x + self.w]
