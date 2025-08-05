@@ -1,5 +1,5 @@
 # not a yuge fan of script just for functions. but also not sure where else to put these tho...
-
+import numpy as np
 import geopandas as gpd
 from shapely import Polygon
 from functools import reduce
@@ -25,7 +25,8 @@ def avg_polygon_intersection(polygon1:Polygon, polygon2:Polygon):
         (polygon1.intersection(polygon2).area / polygon1.area ) + (polygon2.intersection(polygon1).area / polygon2.area)
     ) / 2 * 100, 2)
 
-def filter_intersection_area(gdf:gpd.GeoDataFrame, overlap_threshold:int=50, left_column:str='polygon_left', right_column:str='polygon_right'):
+# NOTE: reducing overlap threshold bc i reducing the Region default areas
+def filter_intersection_area(gdf:gpd.GeoDataFrame, overlap_threshold:int=10, left_column:str='polygon_left', right_column:str='polygon_right'):
     gdf['intersection_area'] = gdf.apply(lambda x: avg_polygon_intersection(x[left_column], x[right_column]), axis=1)
     gdf = gdf[gdf.intersection_area > overlap_threshold]
     gdf = gdf.drop(['intersection_area'], axis=1)
@@ -59,3 +60,43 @@ def merge_regions(gdf:gpd.GeoDataFrame, left_column:str='region_left', right_col
         ValueError('couldnt merge all regions')
     else:
         return merge_regions, drop_regions
+
+def recursive_split(data, return_indicies:bool=True, max_clusters=4, min_size=2):
+    ''' split 1D data into clusters. copilot function '''
+    data = np.array(data)
+    sorted_indices = np.argsort(data)
+    sorted_data = data[sorted_indices]
+
+    clusters = [np.arange(len(sorted_data))]
+
+    while len(clusters) < max_clusters:
+        
+        # find cluster with highest variance
+        idx_to_split = np.argmax([np.var(sorted_data[c]) for c in clusters])
+        cluster = clusters[idx_to_split]
+
+        if len(cluster) < min_size * 2:
+            break
+
+        best_split, best_var = None, float('inf')
+
+        # loop through each possible split at i, index
+        for i in range(min_size, len(cluster) - min_size):
+            c1, c2 = cluster[:i], cluster[i:] # split at index
+            total_var = np.var(sorted_data[c1]) + np.var(sorted_data[c2]) # calc variance
+            if total_var < best_var: # if variance improved (decreases, update variables)
+                best_split = (c1, c2)
+                best_var = total_var
+
+        if best_split:
+            clusters[idx_to_split] = best_split[0]
+            clusters.insert(idx_to_split + 1, best_split[1])
+        else:
+            break
+
+    # return the clusters or the indices
+    if return_indicies:
+        return [sorted_indices[cluster].tolist() for cluster in clusters]
+    else:
+        return [sorted_data[cluster].tolist() for cluster in clusters]
+    
