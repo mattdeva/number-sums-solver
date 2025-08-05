@@ -42,7 +42,8 @@ def _get_int(input_:object):
     
 class Matrix:
     def __init__(
-            self, num_df:pd.DataFrame, 
+            self, 
+            num_df:pd.DataFrame, 
             colors:Colors|None=None,
             squares:Sequence[Square]|None=None, 
         ):
@@ -77,12 +78,11 @@ class Matrix:
         )
     
     @classmethod
-    def from_squares(cls, squares:Sequence[Square], colors:bool=False):
+    def from_squares(cls, squares:Sequence[Square], colors:Colors|None=None):
         df = df_from_value_list([0]+[s.value for s in squares])
-        size = df.shape[0]
         return cls(
             df,
-            Colors.blank(size) if colors else None,
+            colors,
             squares
         )
     
