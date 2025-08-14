@@ -10,7 +10,7 @@ The player will attempt to select the numbers in the matrix to equal the values 
 
 # Example Puzzle with Solution
 
-(If I wasn't lazy, I would include a screenshot before and after solving the puzzle... which I have done but the pictures are somewhere in my phone.. and I really just don't want to add it now)
+(If I wasn't lazy, I would include a screenshot before and after solving the puzzle... which I have but the pictures are somewhere in my phone.. and I really just don't want to add it now)
 
 ### Start
 |   | 5 | 3 | 4 |
