@@ -35,4 +35,4 @@ There are several ways to load a puzzle into the program:
 See demo for more detail.
 
 # Future development
-None other than code cleaning and any related tweaks to stuff. Maybe a GUI at some point.
+Most likely wont get back to this until at least March.. But when if/when I do, uploading pictures with colors needs to be tested more. Code cleaning and any related tweaks to stuff. May need to update comments and docstrings if I come back and confused.
